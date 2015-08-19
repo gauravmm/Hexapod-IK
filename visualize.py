@@ -2,6 +2,7 @@
 #
 # Gaurav Manek
 import matplotlib.pyplot as plt;
+from mpl_toolkits.mplot3d import Axes3D;
 
 class Visualizer(object):
     def __init__(self, body, legs):
@@ -30,7 +31,7 @@ class Visualizer(object):
         self.ax.set_zlim(-0, 100);
            
         for lg in self.legs:
-            pos, rot = lg.getEndEffector().getSkeletonPosition();
+            pos, rot = lg.getEndEffector().computeForwardKinematics();
             prevPos = self.body.getTranslation();
 
             for i,currPos in enumerate(pos):

@@ -5,6 +5,7 @@
 # Gaurav Manek
 
 import math;
+import numpy as np;
 from pyrr import Quaternion, Vector3;
 
 class HexapodBody(object):
@@ -99,38 +100,22 @@ class HexapodLegSegment(object):
         self.angle_raw = None;
         self.angle = None;
         self.setRotation(start_angle);
+    
+    def getRotation(self):
+        return self.angle_raw;
         
     def setRotation(self, new_angle):
-        self.angle_raw = self.angle_map(new_angle);
+        #self.angle_raw = self.angle_map(new_angle);
+        self.angle_raw = new_angle;
         self.angle = Quaternion.from_eulers([x * self.angle_raw for x in self.rot_ax]);
     
-    def getSegmentPosition(self):
-        p_pos, p_rot = None, None;
-        if type(self.prev) is HexapodLegSegment:
-            p_pos, p_rot = self.prev.getSegmentPosition();
-        elif type(self.prev) is HexapodLeg:
-            p_pos, p_rot = self.prev.getRootPosition();
-            
-        c_rot = p_rot * self.pre_rot;
-        c_pos = p_pos + c_rot * self.disp;
-        return c_pos, c_rot;
-        
-    """
-    def getSkeletonPosition(self):
-        s_pos, s_rot = self.prev.getSkeletonPosition();        
-        p_pos, p_rot = s_pos[-1], s_rot[-1];
-        
-        c_rot = p_rot * self.pre_rot * self.angle;
-        c_pos = p_pos + c_rot * self.disp;
-        return (s_pos + [c_pos]), (s_rot + [c_rot]);
-    """
-    
     def computeForwardKinematics(self):
-        s_pos, s_rot, jacobian = self.prev.computeForwardKinematics();        
+        s_pos, s_rot = self.prev.computeForwardKinematics();
         p_pos, p_rot = s_pos[-1], s_rot[-1];
         
         c_rot = p_rot * self.pre_rot * self.angle;
         c_pos = p_pos + c_rot * self.disp;
+        
         return (s_pos + [c_pos]), (s_rot + [c_rot]);
         
 
@@ -160,12 +145,19 @@ class HexapodLeg(object):
         itrans = self.body.getTranslation();
         irot = self.body.getRotation();
         return irot * self.displacement + itrans, irot;
-    """
-    def getSkeletonPosition(self):
-        # orp, orr = self.body.getTranslation(), self.body.getRotation();
+
+    def computeForwardKinematics(self):
         rtp, rtr = self.getRootPosition();
         return ([rtp],[rtr]);
-    """
-    def computeForwardKinematics(self)
-        rtp, rtr = self.getRootPosition();
-        return ([rtp],[rtr], []);
+        
+    def computeInverseKinematicsPass(self):
+        s_pos, s_rot = self.getEndEffector().computeForwardKinematics();
+        # Get the end effector position:
+        ee = s_pos[-1];
+        # For each joint, calculate the Jacobian:
+        jacob = [(c_rot.axis ^ (ee - p_pos)).xyz for p_pos, c_rot in zip(s_pos[:-1], s_rot[1:])];
+        jacob = np.matrix(jacob);
+        jacob_t = np.linalg.pinv(jacob);
+        return s_pos, jacob_t;
+        
+        
