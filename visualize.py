@@ -20,6 +20,10 @@ class Visualizer(object):
         return [[a[i] for a in args] for i in range(3)];
         
     def update(self):
+        # Check to see if its still open:
+        if not plt.fignum_exists(self.fig.number):
+            raise KeyboardInterrupt("Window Closed");
+        
         self.ax.cla();
         self.ax.set_xlim(-100, 100);
         self.ax.set_ylim(-100, 100);

@@ -14,8 +14,15 @@ def run():
    
     while True:
         for angle in anim:
-            body.setRotation(*angle);
+            for l in legs:
+                for i,s in enumerate(l.getSegments()):
+                    s.setRotation(angle[i]);
+                    
+            #body.setRotation(*angle);
             viz.update();
 
 if __name__ == "__main__":
-    run();
+    try:
+        run();
+    except (KeyboardInterrupt, SystemExit):
+        pass;

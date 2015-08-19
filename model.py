@@ -44,23 +44,24 @@ class HexapodBody(object):
         
         ymult = 1;
         change_angle = lambda x: x;
+        angle_map = lambda x: x;
         if "left" in leg:
             ymult = -1;
-            change_angle = lambda x: math.pi - x;
+            change_angle = lambda x: (math.pi - x);
+            angle_map = lambda x: -x;
             
         segs = [];
         prevSeg = lobj;
 
         #[rotation_axis, disp, start_angle]
-        legargs = [ [[1., 0., 0.], Vector3([13.3, 14.9, 0]), Quaternion.from_eulers([0., 0., math.pi/2]), change_angle(3*math.pi/2)],
-                    [[0., 1., 0.], Vector3([0, 55.4, 0]), Quaternion.from_eulers([0, 0, 0]), change_angle(math.asin(30.1/55.4))],
-                    [[0., 1., 0.], Vector3([0, 90.0, 0]), Quaternion.from_eulers([0, 0, 0]), change_angle(math.pi/2)]
+        legargs = [ [angle_map, [0., 0., 1.], Vector3([13.3, ymult * 14.9, 0]), Quaternion.from_eulers([0., 0., change_angle(-math.pi/2)]), 0.],
+                    [angle_map, [0., 1., 0.], Vector3([0, 55.4, 0]), Quaternion.from_eulers([0., change_angle(math.asin(30.1/55.4)), 0.]), 0.],
+                    [angle_map, [0., 1., 0.], Vector3([0, 90.0, 0]), Quaternion.from_eulers([0., -math.pi/2 + change_angle(-math.asin(30.1/55.4)), 0.]), 0.]
                     ];
         
         for args in legargs:
             prevSeg = HexapodLegSegment(prevSeg, *args);
             segs.append(prevSeg);
-        #segs.reverse();
         return segs;
         
     # Returns -1 if left side, 1 otherwise.
@@ -88,7 +89,8 @@ class HexapodBody(object):
 
 
 class HexapodLegSegment(object):
-    def __init__(self, prev_segment, rotation_axis, disp, pre_rot, start_angle):
+    def __init__(self, prev_segment, angle_map, rotation_axis, disp, pre_rot, start_angle):
+        self.angle_map = angle_map;        
         self.prev = prev_segment;
         self.rot_ax = rotation_axis;
         self.disp = disp;
@@ -99,8 +101,8 @@ class HexapodLegSegment(object):
         self.setRotation(start_angle);
         
     def setRotation(self, new_angle):
-        self.angle_raw = new_angle;
-        self.angle = Quaternion.from_eulers([x * new_angle for x in self.rot_ax]);
+        self.angle_raw = self.angle_map(new_angle);
+        self.angle = Quaternion.from_eulers([x * self.angle_raw for x in self.rot_ax]);
     
     def getSegmentPosition(self):
         p_pos, p_rot = None, None;
@@ -113,13 +115,22 @@ class HexapodLegSegment(object):
         c_pos = p_pos + c_rot * self.disp;
         return c_pos, c_rot;
         
+    """
     def getSkeletonPosition(self):
         s_pos, s_rot = self.prev.getSkeletonPosition();        
         p_pos, p_rot = s_pos[-1], s_rot[-1];
         
-        c_rot = p_rot * self.pre_rot;
+        c_rot = p_rot * self.pre_rot * self.angle;
         c_pos = p_pos + c_rot * self.disp;
-        c_rot = c_rot * self.angle;
+        return (s_pos + [c_pos]), (s_rot + [c_rot]);
+    """
+    
+    def computeForwardKinematics(self):
+        s_pos, s_rot, jacobian = self.prev.computeForwardKinematics();        
+        p_pos, p_rot = s_pos[-1], s_rot[-1];
+        
+        c_rot = p_rot * self.pre_rot * self.angle;
+        c_pos = p_pos + c_rot * self.disp;
         return (s_pos + [c_pos]), (s_rot + [c_rot]);
         
 
@@ -149,10 +160,12 @@ class HexapodLeg(object):
         itrans = self.body.getTranslation();
         irot = self.body.getRotation();
         return irot * self.displacement + itrans, irot;
-    
+    """
     def getSkeletonPosition(self):
         # orp, orr = self.body.getTranslation(), self.body.getRotation();
         rtp, rtr = self.getRootPosition();
         return ([rtp],[rtr]);
-    
-        
+    """
+    def computeForwardKinematics(self)
+        rtp, rtr = self.getRootPosition();
+        return ([rtp],[rtr], []);
