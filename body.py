@@ -98,13 +98,14 @@ class HexapodLegSegment(object):
         self.angle = Quaternion.from_eulers([x * self.angle_raw for x in self.rot_ax]);
     
     def computeForwardKinematics(self):
-        s_pos, s_rot = self.prev.computeForwardKinematics();
+        s_pos, s_rot, joint_axis = self.prev.computeForwardKinematics();
         p_pos, p_rot = s_pos[-1], s_rot[-1];
         
         c_rot = p_rot * self.pre_rot * self.angle;
         c_pos = p_pos + c_rot * self.disp;
+        ja = p_rot * self.pre_rot * Vector3(self.rot_ax);
         
-        return (s_pos + [c_pos]), (s_rot + [c_rot]);
+        return (s_pos + [c_pos]), (s_rot + [c_rot]), (joint_axis + [ja]);
     
     def clone(self, prevSeg):
         return HexapodLegSegment(prevSeg, self);
@@ -146,7 +147,7 @@ class HexapodLeg(object):
         return self.segments[-1];
     
     def getEndEffectorPosition(self):
-        s_pos, s_rot = self.getEndEffector().computeForwardKinematics();
+        s_pos, s_rot, joint_axis = self.getEndEffector().computeForwardKinematics();
         return s_pos[-1];
         
     def update(self, angles):
@@ -166,17 +167,17 @@ class HexapodLeg(object):
 
     def computeForwardKinematics(self):
         rtp, rtr = self.getRootPosition();
-        return ([rtp],[rtr]);
+        return ([rtp],[rtr], []);
     
     def clone(self):
         return HexapodLeg(self);
     
     def computeInverseKinematicsPass(self):
-        s_pos, s_rot = self.getEndEffector().computeForwardKinematics();
+        s_pos, s_rot, joint_axis = self.getEndEffector().computeForwardKinematics();
         # Get the end effector position:
         ee = s_pos[-1];
         # For each joint, calculate the Jacobian:
-        jacob = [(c_rot.axis ^ (ee - p_pos)).xyz for p_pos, c_rot in zip(s_pos[:-1], s_rot[1:])];
+        jacob = [(c_rot ^ (ee - p_pos)).xyz for p_pos, c_rot in zip(s_pos[:-1], joint_axis)];
         jacob = np.matrix(jacob);
         jacob_t = np.linalg.pinv(jacob);
         return s_pos, jacob_t;

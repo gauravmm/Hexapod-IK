@@ -32,14 +32,14 @@ class Visualizer(object):
         self.ax.set_zlim(-0, 100);
            
         for lg in self.legs:
-            pos, rot = lg.getEndEffector().computeForwardKinematics();
+            pos, rot, joint_axis = lg.getEndEffector().computeForwardKinematics();
             prevPos = self.body.getTranslation();
 
             for i,currPos in enumerate(pos):
                 self.ax.plot(*self.coordsToPlot(prevPos, currPos), color=self.color[i]);
                 prevPos = currPos;
             
-            for p, r in zip(pos[:-1], rot[1:]):
+            for p, r in zip(pos[:-1], joint_axis):
                 self.ax.plot(*self.coordsToPlot(p, p + r*p/math.sqrt(p | p)*20), color="#FF9999");
                 
             # Draw the body, from the origin to each of the legs:
