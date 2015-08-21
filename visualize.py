@@ -3,6 +3,7 @@
 # Gaurav Manek
 import matplotlib.pyplot as plt;
 from mpl_toolkits.mplot3d import Axes3D;
+from pyrr import Vector3;
 import math;
 
 class Visualizer(object):
@@ -30,7 +31,13 @@ class Visualizer(object):
         self.ax.set_xlim(-100, 100);
         self.ax.set_ylim(-100, 100);
         self.ax.set_zlim(-0, 100);
-           
+          
+        # Forward pointing:
+        bt, br = self.body.getSkeletonPosition();
+        proj = Vector3([0,70,0]);
+        self.ax.plot(*self.coordsToPlot(bt, bt + br * proj), color=self.color[0]);
+        self.ax.scatter(*(self.coordsToPlot(bt + br * proj) + ['o']), color=self.color[0]);
+          
         for lg in self.legs:
             pos, rot, joint_axis = lg.getEndEffector().computeForwardKinematics();
             prevPos = self.body.getTranslation();
