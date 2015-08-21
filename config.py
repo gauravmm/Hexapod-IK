@@ -46,9 +46,9 @@ class HexapodConfig(object):
             angle_map = lambda x: -x;
             
         #[rotation_axis, disp, start_angle]
-        legargs = [ [angle_map, [0., 0., 1.], Vector3([13.3, ymult * 14.9, 0]), Quaternion.from_eulers([0., 0., change_angle(-math.pi/2)]), 0.],
-                    [angle_map, [0., 1., 0.], Vector3([0, 55.4, 0]), Quaternion.from_eulers([0., change_angle(math.asin(30.1/55.4)), 0.]), 0.],
-                    [angle_map, [0., 1., 0.], Vector3([0, 90.0, 0]), Quaternion.from_eulers([0., -math.pi/2 + change_angle(-math.asin(30.1/55.4)), 0.]), 0.]
+        legargs = [ [angle_map, Vector3([0., 0., 1.]), Vector3([13.3, ymult * 14.9, 0]), change_angle(math.pi/2)],
+                    [angle_map, Vector3([1., 0., 0.]), Vector3([0, 55.4, 0]), change_angle(-math.pi/2 + math.asin(30.1/55.4))],
+                    [angle_map, Vector3([1., 0., 0.]), Vector3([0, 90.0, 0]), -math.pi/2 + change_angle(-math.pi/2 - math.asin(30.1/55.4))]
                     ];
         
         return legargs;

@@ -71,39 +71,32 @@ class HexapodLegSegment(object):
             self.angle_map = o.angle_map;            
             self.rot_ax = o.rot_ax;
             self.disp = o.disp;
-            self.pre_rot = o.pre_rot;
-            self.st_ang = o.st_ang;
-            self.angle_raw = o.angle_raw;
+            self.start_angle = o.start_angle;
             self.angle = o.angle;
-        elif len(args) == 5:
-            angle_map, rotation_axis, disp, pre_rot, start_angle = args;
+        elif len(args) == 4:
+            angle_map, rotation_axis, disp, start_angle = args;
             self.angle_map = angle_map;        
             self.prev = prev_segment;
             self.rot_ax = rotation_axis;
             self.disp = disp;
-            self.pre_rot = pre_rot;
-            self.st_ang = start_angle;
-            self.angle_raw = None;
-            self.angle = None;
-            self.setRotation(start_angle);
+            self.start_angle = start_angle;
+            self.angle = 0;
         else:
             raise TypeError("Incorrect arguments");
     
     def getRotation(self):
-        return self.angle_raw;
+        return self.angle;
         
     def setRotation(self, new_angle):
-        #self.angle_raw = self.angle_map(new_angle);
-        self.angle_raw = new_angle;
-        self.angle = Quaternion.from_eulers([x * self.angle_raw for x in self.rot_ax]);
+        self.angle = new_angle;
     
     def computeForwardKinematics(self):
         s_pos, s_rot, joint_axis = self.prev.computeForwardKinematics();
         p_pos, p_rot = s_pos[-1], s_rot[-1];
         
-        c_rot = p_rot * self.pre_rot * self.angle;
+        c_rot = p_rot * Quaternion.from_axis_rotation(self.rot_ax, self.start_angle + self.angle);
         c_pos = p_pos + c_rot * self.disp;
-        ja = p_rot * self.pre_rot * Vector3(self.rot_ax);
+        ja = p_rot * Vector3(self.rot_ax);
         
         return (s_pos + [c_pos]), (s_rot + [c_rot]), (joint_axis + [ja]);
     

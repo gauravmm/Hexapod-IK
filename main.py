@@ -38,6 +38,11 @@ def iktest(hexa):
     body.setRotation(0.0, 0.0, 0.0);
     alpha = 0.005;
     
+    viz.update();
+    print legs[0].getEndEffector().computeForwardKinematics();
+    return
+    
+    
     while True:
         for l in legs:
             pos, jacob_inv = l.computeInverseKinematicsPass();   
