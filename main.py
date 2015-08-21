@@ -7,8 +7,8 @@ from pyrr import Vector3;
 def run():
     hexa = Hexapod(HexapodConfig());
     
-    #hexatest1(hexa);
-    iktest(hexa);
+    hexatest1(hexa);
+    #iktest(hexa);
     #animate(hexa.body, hexa.legs);
 
 def hexatest1(hexa):
@@ -34,36 +34,28 @@ def iktest(hexa):
     viz = Visualizer(hexa);
     
     body, legs = hexa.body, hexa.legs;
-    legs = [l for l in legs if "middle right" in l.getId()];
+    #legs = [l for l in legs if "middle right" in l.getId()];
     body.setRotation(0.0, 0.0, 0.0);
-    alpha = 0.005;
-    
-    viz.update();
-    print legs[0].getEndEffector().computeForwardKinematics();
-    return
-    
+    alpha = 0.2;
+    offset_x = 50;
+    offset_y = 10;
     
     while True:
         for l in legs:
+            d = -1 if "left" in l.getId() else 1;
             pos, jacob_inv = l.computeInverseKinematicsPass();   
             ee = pos[-1];
             x,y,z = l.getWorldPositionAnchor().xyz;
             #t = Vector3([100, 10, 0]);
-            t = Vector3([x, y, 0]);
+            t = Vector3([x + d * offset_x, y + offset_y, 0]);
             
             # Calculate the difference to target:
-            delta = np.array([[v] for v in t - ee]);
+            delta = np.array([[v] for v in ee - t]);
             update = (jacob_inv * delta * alpha).tolist();
             
             for u,s in zip(update, l.getSegments()):
                 s.setRotation(s.getRotation() + u[0]);
             
-            print t;
-            print ee;
-            print update;
-            print [s.getRotation() for s in l.getSegments()];
-            print np.linalg.norm(delta);
-            print 
             
         #body.setRotation(*angle);
         viz.update();

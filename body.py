@@ -172,6 +172,6 @@ class HexapodLeg(object):
         # For each joint, calculate the Jacobian:
         jacob = [(c_rot ^ (ee - p_pos)).xyz for p_pos, c_rot in zip(s_pos[:-1], joint_axis)];
         jacob = np.matrix(jacob);
-        jacob_t = np.linalg.pinv(jacob);
+        jacob_t = np.linalg.pinv(jacob.T);
         return s_pos, jacob_t;
         

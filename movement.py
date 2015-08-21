@@ -49,13 +49,13 @@ class LegMotionPlanner(object):
         self.options = kwargs;        
         
         if "alpha" not in self.options and "schedule" not in self.options:
-            self.options["alpha"] = 0.01;
+            self.options["alpha"] = 0.2;
         elif "alpha" in self.options and "schedule" in self.options:
             self.options["schedule"] = [self.options["alpha"] * s for s in self.options["schedule"]];
             del self.options["alpha"];
         
         if "delta" not in self.options:
-            self.options["delta"] = 3; # linear distance to target in mm 
+            self.options["delta"] = 1; # linear distance to target in mm 
         
         self.options["delta_sq"]  = self.options["delta"] ** 2;
         del self.options["delta"];
@@ -86,7 +86,6 @@ class LegMotionPlanner(object):
             
             # Calculate the difference to target:
             delta = target.dist(ee);
-            print (delta | delta), "\t", delta;
             
             if (delta | delta) < self.options["delta_sq"]:
                 # We have converged!
@@ -95,7 +94,7 @@ class LegMotionPlanner(object):
             
             update = (jacob_inv * np.array([[delta.x], [delta.y], [delta.z]]) * alpha).tolist();
             for u,s in zip(update, leg.getSegments()):
-                s.setRotation(s.getRotation() - u[0]);
+                s.setRotation(s.getRotation() + u[0]);
             
             i += 1;
     
