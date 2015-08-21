@@ -40,7 +40,7 @@ class Visualizer(object):
                 prevPos = currPos;
             
             for p, r in zip(pos[:-1], joint_axis):
-                self.ax.plot(*self.coordsToPlot(p, p + r*p/math.sqrt(p | p)*20), color="#FF0099");
+                self.ax.plot(*self.coordsToPlot(p, p + r*10), color="#FF0099");
                 
             # Draw the body, from the origin to each of the legs:
             # self.ax.plot(*self.coordsToPlot(self.body.getTranslation(), lg.getRootPosition()), color=self.body_color);
