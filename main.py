@@ -9,7 +9,6 @@ def run():
     
     hexatest1(hexa);
     #iktest(hexa);
-    #animate(hexa.body, hexa.legs);
 
 def hexatest1(hexa):
     viz = Visualizer(hexa);
@@ -35,7 +34,7 @@ def iktest(hexa):
     
     body, legs = hexa.body, hexa.legs;
     #legs = [l for l in legs if "middle right" in l.getId()];
-    body.setRotation(0.0, 0.0, 0.0);
+    body.setRotation(0.2, 0.1, 0.0);
     alpha = 0.2;
     offset_x = 50;
     offset_y = 10;
@@ -46,7 +45,6 @@ def iktest(hexa):
             pos, jacob_inv = l.computeInverseKinematicsPass();   
             ee = pos[-1];
             x,y,z = l.getWorldPositionAnchor().xyz;
-            #t = Vector3([100, 10, 0]);
             t = Vector3([x + d * offset_x, y + offset_y, 0]);
             
             # Calculate the difference to target:
@@ -57,7 +55,6 @@ def iktest(hexa):
                 s.setRotation(s.getRotation() + u[0]);
             
             
-        #body.setRotation(*angle);
         viz.update();
 
 def animate(body, legs):

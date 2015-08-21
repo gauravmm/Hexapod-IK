@@ -68,14 +68,12 @@ class HexapodLegSegment(object):
             o = args[0];
             
             self.prev = prev_segment;
-            self.angle_map = o.angle_map;            
             self.rot_ax = o.rot_ax;
             self.disp = o.disp;
             self.start_angle = o.start_angle;
             self.angle = o.angle;
-        elif len(args) == 4:
-            angle_map, rotation_axis, disp, start_angle = args;
-            self.angle_map = angle_map;        
+        elif len(args) == 3:
+            rotation_axis, disp, start_angle = args;
             self.prev = prev_segment;
             self.rot_ax = rotation_axis;
             self.disp = disp;
