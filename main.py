@@ -1,14 +1,35 @@
-from model import HexapodBody, HexapodLeg;
+from body import Hexapod;
+from config import HexapodConfig;
 from visualize import Visualizer;
 import numpy as np;
+from pyrr import Vector3;
 
 def run():
-    body = HexapodBody();
-    legs = [HexapodLeg(body, legid) for legid in ["front left", "front right", "middle left", "middle right", "rear left", "rear right"]];
+    hexa = Hexapod(HexapodConfig());
     
-    iktest(body, legs);
-    #animate(body, legs);
+    hexatest1(hexa);
+    #iktest(hexa.body, hexa.legs);
+    #animate(hexa.body, hexa.legs);
+
+def hexatest1(hexa):
+    viz = Visualizer(hexa);
     
+    t = {};
+    fr = 10;
+    for l in hexa.legs:
+        x,y,z = l.getWorldPositionAnchor().xyz;
+        offset = 30.;
+        if "left" in l.getId():
+            offset *= -1.;
+        t[l.getId()] = {"target": Vector3([x + offset, y, 0.]), "frames": fr};
+    
+    hexa.mp.updateTarget(t);
+    
+    while fr > 0:
+        fr -= 1;
+        hexa.tick();
+        viz.update();
+
 def iktest(body, legs):
     viz = Visualizer(body, legs);
     

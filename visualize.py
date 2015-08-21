@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt;
 from mpl_toolkits.mplot3d import Axes3D;
 
 class Visualizer(object):
-    def __init__(self, body, legs):
-        self.body = body;
-        self.legs = legs;
+    def __init__(self, hexa):
+        self.body = hexa.body;
+        self.legs = hexa.legs;
 
         self.color = ["#000000", "#F58723", "#2B4E72", "#94BA65"];
         
