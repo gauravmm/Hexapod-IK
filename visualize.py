@@ -3,6 +3,7 @@
 # Gaurav Manek
 import matplotlib.pyplot as plt;
 from mpl_toolkits.mplot3d import Axes3D;
+import math;
 
 class Visualizer(object):
     def __init__(self, hexa):
@@ -37,6 +38,9 @@ class Visualizer(object):
             for i,currPos in enumerate(pos):
                 self.ax.plot(*self.coordsToPlot(prevPos, currPos), color=self.color[i]);
                 prevPos = currPos;
+            
+            for p, r in zip(pos[:-1], rot[1:]):
+                self.ax.plot(*self.coordsToPlot(p, p + r*p/math.sqrt(p | p)*20), color="#FF9999");
                 
             # Draw the body, from the origin to each of the legs:
             # self.ax.plot(*self.coordsToPlot(self.body.getTranslation(), lg.getRootPosition()), color=self.body_color);
