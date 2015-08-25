@@ -22,7 +22,7 @@ class Visualizer(object):
     def coordsToPlot(self, *args):
         return [[a[i] for a in args] for i in range(3)];
         
-    def update(self):
+    def tick(self):
         # Check to see if its still open:
         if not plt.fignum_exists(self.fig.number):
             raise KeyboardInterrupt("Window Closed");
@@ -53,4 +53,4 @@ class Visualizer(object):
             # self.ax.plot(*self.coordsToPlot(self.body.getTranslation(), lg.getRootPosition()), color=self.body_color);
                                 
         self.fig.canvas.draw();
-        plt.pause(0.0001);
+        plt.pause(0.01);

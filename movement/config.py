@@ -9,6 +9,24 @@ from pyrr import Vector3;
 import math;
 
 class HexapodConfig(object):
+    def __init__(self):
+        self.legPhase = dict(zip(["front left", "middle left", "rear left", "rear right", "front right", "middle right"], [0, 1, 0, 1, 0, 1]));
+    
+    def getStepParams(self):
+        return {
+            "center": (50, -20),
+            "radius": 17,
+            "height": 5,
+            "height_peak": 15,
+            "frame_intermediate": 1
+        }
+        
+    def getLegPhase(self, legid):
+        return self.legPhase[legid];
+    
+    def getInitialPose(self):
+        return [0., 0., 0.], [0., 0., 50.];
+    
     def getLegDisplacement(self, lobj):
         leg = lobj.getId();
         
@@ -34,7 +52,8 @@ class HexapodConfig(object):
         return Vector3([x, y, 0.]);
         
     def getLegs(self):
-        return ["front left", "front right", "middle left", "middle right", "rear left", "rear right"];
+        # They will be sent to the robot in this order:
+        return ["front left", "middle left", "rear left", "rear right", "front right", "middle right"];
     
     def getLegSegmentConfig(self, leg):
         ymult = 1;
@@ -56,3 +75,6 @@ class HexapodConfig(object):
 
     def getHexapodMotionPlannerParams(self):
         return {};
+    
+    def rad2enc(self, rad):
+        return round(rad * 160.0 / (math.pi/2));
