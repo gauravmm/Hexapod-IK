@@ -7,11 +7,15 @@
 import numpy as np;
 from pyrr import Quaternion, Vector3;
 from movement import HexapodMotionPlanner, StepMotionPlanner;
+from referenceframe import ReferenceFrame;
 
 class Hexapod(object):
     def __init__(self, config):
-        self.body = HexapodBody(config);
-        self.legs = [HexapodLeg(config, self.body, legid) for legid in config.getLegs()];
+        # Prepare the root reference frame.
+        self.ref = ReferenceFrame();
+        
+        self.body = HexapodBody(self.ref, config);
+        self.legs = [HexapodLeg(config, self.body, self.ref, legid) for legid in config.getLegs()];
         self.mp = HexapodMotionPlanner(config, self.body, self.legs);
         self.stepmp = [StepMotionPlanner(config, self.mp, l) for l in self.legs];
         
@@ -30,16 +34,13 @@ class Hexapod(object):
     def getRawState(self):
         return dict((l.getId(), [s.getRotation() for s in l.getSegments()]) for l in self.legs)
 
+
 class HexapodBody(object):
-    def __init__(self, config):
+    def __init__(self, parent_ref, config):
         irot, itrans = config.getInitialPose();
-        self.init_rot = Quaternion.from_eulers(irot); # Roll, Pitch, Yaw
-        self.init_trans = Vector3(itrans);
+        self.ref = ReferenceFrame(Vector3(itrans), Quaternion.from_eulers(irot), parent_ref);
         self.legs = [];
 
-        self.setRotation(0, 0, 0);
-        self.setTranslation(Vector3([0, 0, 0]));
-    
     def getLegSegments(self, config, lobj):
         legargs = config.getLegSegmentConfig(lobj.getId())
             
@@ -57,28 +58,11 @@ class HexapodBody(object):
             return -1;
         else:
             return 1;
-        
-    def getSkeletonPosition(self):
-        return [self.getTranslation(), self.getRotation()];
-    def getInitialRotation(self):
-        return self.init_rot;
-    def getRotation(self):
-        return self.rot;
-    def getRotationRaw(self):
-        return self.rot_raw;
-    def getInitialTranslation(self):
-        return self.init_trans;
-    def getTranslation(self):
-        return self.trans;
-    def getTranslationRaw(self):
-        return self.trans_raw;
-        
-    def setRotation(self, yaw, pitch, roll):
-        self.rot_raw = (yaw, pitch, roll);
-        self.rot = self.init_rot * Quaternion.from_eulers([yaw, pitch, roll]);
-    def setTranslation(self, mtrans):
-        self.trans_raw = mtrans;
-        self.trans = self.init_trans + mtrans;
+            
+    def setRotation(self, rot):
+        self.ref.setRotation(rot);
+    def setTranslation(self, trans):
+        self.ref.setTranslation(trans);
 
 
 class HexapodLegSegment(object):
@@ -132,8 +116,9 @@ class HexapodLeg(object):
             o = args[0];
             self.id = o.id;
             self.body = o.body;
-            self.displacement = o.displacement;
             self.direction = o.direction;
+            self.ref = o.ref;
+            self.world_ref = o.world_ref;
             self.segments = [];
             prevSeg = self;
             for seg in o.segments:
@@ -141,11 +126,13 @@ class HexapodLeg(object):
                 self.segments.append(nextSeg);
                 prevSeg = nextSeg;
                 
-        elif len(args) == 3:
-            config, body, legid = args;
+        elif len(args) == 4:
+            config, body, world_ref, legid = args;
             self.id = legid;
             self.body = body;
-            self.displacement = config.getLegDisplacement(self);
+            disp = config.getLegDisplacement(self);
+            self.ref = ReferenceFrame(disp, Quaternion.from_z_rotation(0.), body.ref);
+            self.world_ref = ReferenceFrame(disp, Quaternion.from_z_rotation(0.), world_ref);
             self.segments = body.getLegSegments(config, self);
             self.direction = body.getLegDirection(self);
         else:
@@ -163,9 +150,6 @@ class HexapodLeg(object):
     def getEndEffector(self):
         return self.segments[-1];
     
-    def getDisplacement(self):
-        return self.displacement;
-    
     def getEndEffectorPosition(self):
         s_pos, s_rot, joint_axis = self.getEndEffector().computeForwardKinematics();
         return s_pos[-1];
@@ -176,18 +160,10 @@ class HexapodLeg(object):
     
     # Get a position fixed to the world, so that it can be used to plan steps.
     def getWorldPositionAnchor(self):
-        itrans = self.body.getInitialTranslation();
-        irot = self.body.getInitialRotation();
-        return irot * self.displacement + itrans;
+        return self.world_ref.getTranslation();
         
-    def getRootPosition(self):
-        itrans = self.body.getTranslation();
-        irot = self.body.getRotation();
-        return irot * self.displacement + itrans, irot;
-
     def computeForwardKinematics(self):
-        rtp, rtr = self.getRootPosition();
-        return ([rtp],[rtr], []);
+        return ([self.ref.getTranslation()],[self.ref.getRotation()], []);
     
     def clone(self):
         return HexapodLeg(self);

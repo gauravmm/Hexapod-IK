@@ -8,6 +8,7 @@ Created on Wed Aug 19 22:12:49 2015
 from pyrr import Vector3, Quaternion;
 import numpy as np;
 import math;
+from referenceframe import ReferenceFrame;
 
 class LegTarget(object):
     def __init__(self, *args):
@@ -27,7 +28,8 @@ class LegTarget(object):
     
     def dist(self, ee):
         return ee - self.pt;
-        
+
+
 class LegTargetPlane(LegTarget):
     def __init__(self, pt, n, *args):
         if isinstance(pt, Vector3) and isinstance(n, Vector3):
@@ -43,6 +45,7 @@ class LegTargetPlane(LegTarget):
         # Project ee onto the plane:
         ee_proj = self.pt - (((ee - self.pt) | self.n) * self.n) / (self.n | self.n);
         return ee - ee_proj;
+
 
 class LegMotionPlanner(object):
     def __init__(self, leg, **kwargs):
@@ -99,14 +102,16 @@ class LegMotionPlanner(object):
             
             i += 1;
 
+
 class StepMotionPlanner(object):
     def __init__(self, config, mp, leg):
         self.params = config.getStepParams();
         self.mp = mp;
         self.leg = leg;
         self.legId = leg.getId();
+        self.step_type = 0;
         
-        self.phase_group = config.getLegPhase(leg.getId());
+        self.phase_group = config.getLegPhase(leg.getId(), 0);
         self.step_pattern = None;
         self.step_pattern_new = None;
         self.fr = 0;
@@ -134,7 +139,7 @@ class StepMotionPlanner(object):
         # Assuming pure clockwise rotation, what angle would this particular leg
         # have to move at to turn in place?
         # As it happens, this is quite easy:
-        displ = (Quaternion.from_z_rotation(-math.pi/2) * leg.getDisplacement());
+        displ = Quaternion.from_z_rotation(-math.pi/2) * leg.ref.getTranslationBase();
         rotx = displ.x;
         roty = displ.y;
         rotr = (rotx**2 + roty**2)**0.5
@@ -159,7 +164,7 @@ class StepMotionPlanner(object):
         rv[self.phase_change_elligible[1]] = center + raise_large;
         
         # Calculate the offset at 0 degrees, just before the leg sweeps back:
-        offset = Vector3([(right + rot_x*clockwise), (-forward + rot_y*clockwise), 0]);
+        offset = Vector3([(right + rot_x*clockwise), (forward + rot_y*clockwise), 0]);
         offset_sum = sum(o**2 for o in offset) ** 0.5;
         offset *= r/offset_sum;
         
@@ -230,9 +235,10 @@ class StepMotionPlanner(object):
         if self.fr == self.frames:
             self.fr = 0;
 
+worldRefFrame = ReferenceFrame();
 class HexapodMotionPlanner(object):
     def __init__(self, config, body, legs):
-        self.body = body;
+        self.body_ref = body.ref;
         self.legs = legs;
         self.leg_dict = dict((l.getId(), (l, LegMotionPlanner(l, **config.getLegMotionPlannerParams()))) for l in legs);
         
@@ -250,14 +256,16 @@ class HexapodMotionPlanner(object):
         self.getAngleMovement["linear"] = lambda start, end, frames: [(e-s)*1./float(frames) + s for s,e in zip(start, end)];
         self.getMovement = {};
         self.getMovement["linear"] = lambda start, end, frames: (end - start) * (1./float(frames)) + start;
+        self.getMovement["snapto"] = lambda start, end, frames: end;
         self.f = 0;
         
         # Supported "schedule"s are "linear"
-        self.target = dict((l.getId(), {"target": l.getEndEffectorPosition(), "schedule": "linear", "frames": 0}) for l in legs);
+        # l.ref
+        self.target = dict((l.getId(), {"target": l.getEndEffectorPosition(), "ref": worldRefFrame, "schedule": "linear", "frames": 0}) for l in legs);
         
         self.target["body"] = {
-                "trans": self.body.getTranslationRaw(),
-                "rot": self.body.getRotationRaw(),
+                "trans": body.ref.getTranslationRaw(),
+                "rot": body.ref.getRotationRaw(),
                 "schedule": "linear",
                 "frames": 0
                 };
@@ -280,19 +288,19 @@ class HexapodMotionPlanner(object):
         # First do the body:
         if t["body"]["frames"] > 0:
             # Check if the translation needs moving:
-            if self.checkTarget(self.body.getTranslationRaw(), t["body"]["trans"]):
+            if self.checkTarget(self.body_ref.getTranslationRaw(), t["body"]["trans"]):
                 # Snap to, if within range
-                self.body.setTranslation(t["body"]["trans"]);
+                self.body_ref.setTranslation(t["body"]["trans"]);
             else:
-                self.body.setTranslation(self.getMovement[t["body"]["schedule"]](self.body.getTranslationRaw(), t["body"]["trans"], t["body"]["frames"]));
+                self.body_ref.setTranslation(self.getMovement[t["body"]["schedule"]](self.body_ref.getTranslationRaw(), t["body"]["trans"], t["body"]["frames"]));
                 force_legs_update = True; # The body has moved, we need to force the legs to move;
         
             # Check if the rotation needs moving:
-            if self.checkAngle(self.body.getRotationRaw(), t["body"]["rot"]):
+            if self.checkAngle(self.body_ref.getRotationRaw(), t["body"]["rot"]):
                 # Snap to, if within range
-                self.body.setRotation(*t["body"]["rot"]);
+                self.body_ref.setRotation(t["body"]["rot"]);
             else:
-                self.body.setRotation(*self.getAngleMovement[t["body"]["schedule"]](self.body.getRotationRaw(), t["body"]["rot"], t["body"]["frames"]));
+                self.body_ref.setRotation(*self.getAngleMovement[t["body"]["schedule"]](self.body_ref.getRotationRaw(), t["body"]["rot"], t["body"]["frames"]));
                 force_legs_update = True;
                         
             t["body"]["frames"] -= 1;
@@ -308,7 +316,7 @@ class HexapodMotionPlanner(object):
                 # Check if it needs moving:
                 ee = l.getEndEffectorPosition();
                 if not self.checkTarget(ee, t[k]["target"]):
-                    new_ee = self.getMovement[t[k]["schedule"]](ee, t[k]["target"], t[k]["frames"]);
+                    new_ee = self.getMovement[t[k]["schedule"]](ee, t[k]["ref"].project(t[k]["target"]), t[k]["frames"]);
                     # Solve the IK for the new position:
                     l.update(lmp.snapTo(LegTarget(new_ee)));
                 

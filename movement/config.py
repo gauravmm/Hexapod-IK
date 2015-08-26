@@ -10,7 +10,11 @@ import math;
 
 class HexapodConfig(object):
     def __init__(self):
-        self.legPhase = dict(zip(["front left", "middle left", "rear left", "rear right", "front right", "middle right"], [0, 1, 0, 1, 0, 1]));
+        lg = ["front left", "middle left", "rear left", "front right", "middle right", "rear right"];
+        legPhaseAnt = dict(zip(lg, [0, 1, 0, 1, 0, 1]));
+        legPhaseDiagonal = dict(zip(lg, [0, 1, 2, 0, 1, 2]));
+        legPhaseMillipede = dict(zip(lg, [0, 1, 2, 3, 4, 5]));
+        self.legPhase = [legPhaseAnt, legPhaseDiagonal, legPhaseMillipede];
     
     def getStepParams(self):
         return {
@@ -21,8 +25,8 @@ class HexapodConfig(object):
             "frame_intermediate": 1
         }
         
-    def getLegPhase(self, legid):
-        return self.legPhase[legid];
+    def getLegPhase(self, legid, patternid):
+        return self.legPhase[patternid][legid];
     
     def getInitialPose(self):
         return [0., 0., 0.], [0., 0., 50.];
@@ -53,7 +57,7 @@ class HexapodConfig(object):
         
     def getLegs(self):
         # They will be sent to the robot in this order:
-        return ["front left", "middle left", "rear left", "rear right", "front right", "middle right"];
+        return ["front left", "middle left", "rear left", "rear right", "middle right", "front right"];
     
     def getLegSegmentConfig(self, leg):
         ymult = 1;

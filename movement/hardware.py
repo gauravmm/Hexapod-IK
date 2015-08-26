@@ -21,7 +21,7 @@ class SerialLink(object):
         self.rad2enc = config.rad2enc;
         self.hexa = hexa;
         self.ser = serial.Serial(port, 38400, timeout=1);
-        self.angle_invert = [1, -1, 1];
+        self.angle_invert = [-1, -1, 1];
         time.sleep(1);
         if not self.ser:
             raise ValueError("Cannot connect to robot on given port.")

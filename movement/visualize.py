@@ -8,6 +8,7 @@ import math;
 
 class Visualizer(object):
     def __init__(self, hexa):
+        self.hexa = hexa;
         self.body = hexa.body;
         self.legs = hexa.legs;
 
@@ -27,20 +28,22 @@ class Visualizer(object):
         if not plt.fignum_exists(self.fig.number):
             raise KeyboardInterrupt("Window Closed");
         
+        (hx, hy, hz) = self.hexa.ref.getTranslation();
         self.ax.cla();
-        self.ax.set_xlim(-100, 100);
-        self.ax.set_ylim(-100, 100);
-        self.ax.set_zlim(-0, 100);
-          
+        self.ax.set_xlim(hx - 100, hx + 100);
+        self.ax.set_ylim(hy - 100, hy + 100);
+        self.ax.set_zlim(hz +   0, hz + 100);
+        
         # Forward pointing:
-        bt, br = self.body.getSkeletonPosition();
+        bt = self.body.ref.getTranslation();
+        br = self.body.ref.getRotation();
         proj = Vector3([0,70,0]);
         self.ax.plot(*self.coordsToPlot(bt, bt + br * proj), color=self.color[0]);
         self.ax.scatter(*(self.coordsToPlot(bt + br * proj) + ['o']), color=self.color[0]);
           
         for lg in self.legs:
             pos, rot, joint_axis = lg.getEndEffector().computeForwardKinematics();
-            prevPos = self.body.getTranslation();
+            prevPos = self.body.ref.getTranslation();
 
             for i,currPos in enumerate(pos):
                 self.ax.plot(*self.coordsToPlot(prevPos, currPos), color=self.color[i]);
