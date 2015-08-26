@@ -29,7 +29,7 @@ class HexapodConfig(object):
         return self.legPhase[patternid][legid];
     
     def getInitialPose(self):
-        return [0., 0., 0.], [0., 0., 50.];
+        return [0., 0., 0.], [0., -15., 50.];
     
     def getLegDisplacement(self, lobj):
         leg = lobj.getId();
