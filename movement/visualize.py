@@ -36,10 +36,10 @@ class Visualizer(object):
         
         # Forward pointing:
         bt = self.body.ref.getTranslation();
-        br = self.body.ref.getRotation();
-        proj = Vector3([0,70,0]);
-        self.ax.plot(*self.coordsToPlot(bt, bt + br * proj), color=self.color[0]);
-        self.ax.scatter(*(self.coordsToPlot(bt + br * proj) + ['o']), color=self.color[0]);
+        br = self.body.ref.project(Vector3([0.,70.,0.]));
+
+        self.ax.plot(*self.coordsToPlot(bt, br), color=self.color[0]);
+        self.ax.scatter(*(self.coordsToPlot(br) + ['o']), color=self.color[0]);
           
         for lg in self.legs:
             pos, rot, joint_axis = lg.getEndEffector().computeForwardKinematics();

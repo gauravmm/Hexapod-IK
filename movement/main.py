@@ -16,8 +16,9 @@ def hexatest2(hexa, lnk):
     viz = None;
     #viz = Visualizer(hexa);
     
+    hexa.ref.setRotation([0.,0.,0.]);
     hexa.setBodyPose([0., 0., 0.], [0., 0., 0.]);
-    hexa.setWalking(1., 0., 0.);
+    hexa.setWalking(0., 0., 1.);
     while True:
         hexa.tick();
         lnk.tick();

@@ -103,138 +103,6 @@ class LegMotionPlanner(object):
             i += 1;
 
 
-class StepMotionPlanner(object):
-    def __init__(self, config, mp, leg):
-        self.params = config.getStepParams();
-        self.mp = mp;
-        self.leg = leg;
-        self.legId = leg.getId();
-        self.step_type = 0;
-        
-        self.phase_group = config.getLegPhase(leg.getId(), 0);
-        self.step_pattern = None;
-        self.step_pattern_new = None;
-        self.fr = 0;
-        
-        self.direction = leg.getDirection();
-        self.frames = (self.params["frame_intermediate"]*2 + 4) * 2;
-        # Phase numbers where the parameters may be changed:
-        # This is when the robot is at the middle of the step.
-        mid_phase = 1 + self.params["frame_intermediate"] + 1;
-        self.phase_change_elligible = [mid_phase, self.frames/2 + mid_phase];
-        # We always begin one before the starting point, just so we can schedule
-        # the movement to the starting position.
-        self.phase_start = self.phase_change_elligible[self.phase_group] - 1;
-        if self.phase_start < 0:
-            self.phase_start += self.frames;
-         
-        # Set the leg center position:
-        lx,ly,lz = self.leg.getWorldPositionAnchor().xyz;
-        cx, cy = self.params["center"];
-        cx = float(cx * self.direction);
-        cy = float(cy);
-        self.center = Vector3([float(lx + cx), float(ly + cy), 0.])
-        
-        # Calculate the direction for rotation:
-        # Assuming pure clockwise rotation, what angle would this particular leg
-        # have to move at to turn in place?
-        # As it happens, this is quite easy:
-        displ = Quaternion.from_z_rotation(-math.pi/2) * leg.ref.getTranslationBase();
-        rotx = displ.x;
-        roty = displ.y;
-        rotr = (rotx**2 + roty**2)**0.5
-        self.rotation_dirs = (rotx/rotr, roty/rotr);        
-        
-    def computeKeyframes(self, forward, right, clockwise):
-        # Begin with figuring out the frames at which the leg is at the center:
-        p = self.params;
-        cx, cy = p["center"];
-        cx = float(cx * self.direction);
-        cy = float(cy);
-        r = p["radius"];
-        center = self.center;
-        raise_small = [0., 0., float(p["height"])];
-        raise_large = [0., 0., float(p["height_peak"])];
-        rot_x, rot_y = self.rotation_dirs;
-        
-        rv = {};
-        # 90 degrees phase:
-        rv[self.phase_change_elligible[0]] = center;
-        # 270 degree phase:
-        rv[self.phase_change_elligible[1]] = center + raise_large;
-        
-        # Calculate the offset at 0 degrees, just before the leg sweeps back:
-        offset = Vector3([(right + rot_x*clockwise), (forward + rot_y*clockwise), 0]);
-        offset_sum = sum(o**2 for o in offset) ** 0.5;
-        offset *= r/offset_sum;
-        
-        # 0 degrees
-        rv[0] = center + offset;
-        
-        # 180 degrees
-        rv[self.frames/2] = center - offset;
-        
-        # Now append the steps where the leg leaves the surface and touches down:
-        # 180 degrees + 1 frame
-        rv[self.frames/2 + 1] = center - offset + raise_small;
-        
-        # 360 degrees - 1 frame
-        rv[self.frames - 1] = center + offset + raise_small;
-        
-        # For correct wrapping behaviour, we append the minimum value to the
-        # end, after adding the number of frames to it:
-        min_k = min(rv);
-        rv[min_k + self.frames] = rv[min_k];
-        
-        return rv;
-        
-    def setStepParams(self, forward, right, clockwise):
-        sval = abs(forward) + abs(right) + abs(clockwise);
-        
-        if sval == 0:
-            self.step_pattern_new = None;
-        else:
-            # Add this, so we can switch to it at the next opportunity.
-            self.step_pattern_new = self.computeKeyframes(forward, right, clockwise);
-            
-    def stop(self):
-        self.step_pattern_new = "stop";
-    
-    def tick(self):
-        # If we are not moving, check if we need to begin:
-        if not self.step_pattern:
-            # We aren't already walking. Check if we need to start:
-            if not self.step_pattern_new:
-                return; # We don't need to start, return doing nothing.
-            
-            # We set the current phase to the starting phase:
-            self.fr = self.phase_start;
-            self.step_pattern = self.step_pattern_new;
-            self.step_pattern_new = None;
-            # The rest of the code will handle the movement.
-        else:
-            # Check if we can change phase here:
-            if self.fr in self.phase_change_elligible:
-                if self.step_pattern_new:
-                    if self.step_pattern_new == "stop":
-                        self.mp.updateTarget({self.legId: {"target": self.center, "frames": 1}});
-                        self.step_pattern = None;
-                    else:
-                        self.step_pattern = self.step_pattern_new;
-                    self.step_pattern_new = None;
-            
-        # Now we check if the current animation is over:
-        if not self.mp.hasPendingMovement(self.legId):
-            # If it is, we find the next animation, and the number of frames.
-            # We are guaranteed to find a frame, because we did the wrapping trick.
-            next_k = min(k for k in self.step_pattern.iterkeys() if k > self.fr);
-            self.mp.updateTarget({self.legId: {"target": self.step_pattern[next_k], "frames": next_k - self.fr}});
-            
-        # Advance the clock:
-        self.fr += 1;
-        if self.fr == self.frames:
-            self.fr = 0;
-
 worldRefFrame = ReferenceFrame();
 class HexapodMotionPlanner(object):
     def __init__(self, config, body, legs):
@@ -314,9 +182,10 @@ class HexapodMotionPlanner(object):
             if t[k]["frames"] > 0:
                 l, lmp = self.leg_dict[k];
                 # Check if it needs moving:
-                ee = l.getEndEffectorPosition();
+                ee = t[k]["ref"].projectInverse(l.getEndEffectorPosition());
                 if not self.checkTarget(ee, t[k]["target"]):
-                    new_ee = self.getMovement[t[k]["schedule"]](ee, t[k]["ref"].project(t[k]["target"]), t[k]["frames"]);
+                    new_ee = self.getMovement[t[k]["schedule"]](ee, t[k]["target"], t[k]["frames"]);
+                    new_ee = t[k]["ref"].project(new_ee);
                     # Solve the IK for the new position:
                     l.update(lmp.snapTo(LegTarget(new_ee)));
                 

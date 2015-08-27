@@ -19,11 +19,14 @@ class ReferenceFrame(object):
         self.base_rotate = base_rotate;
         self.setTranslation([0., 0., 0.]);
         self.setRotation([0., 0., 0.]);
+        
+    def __repr__(self):
+        return "ReferenceFrame(%s, %s, %s)" % (self.getTranslation(), self.getRotation(), self.parent);
     
     def project(self, vec):
-        if self.parent:
-            vec = self.parent.project(vec);
-        return self.rotate * vec + self.trans;    
+        return self.getTranslation() + (self.getRotation() * vec);
+    def projectInverse(self, vec):
+        return (~self.getRotation()) * (vec - self.getTranslation());
     
     def setTranslation(self, trans):
         self.trans_raw = Vector3(trans);
@@ -45,3 +48,14 @@ class ReferenceFrame(object):
         return self.trans;
     def getTranslationBase(self):
         return self.base_trans;
+
+"""     
+w = ReferenceFrame();
+q = ReferenceFrame(Vector3([10., 0., 0.]), None, w);
+print q.getTranslation();
+w.setRotation([0, 0, 3.1415927*3/2]);
+print q.getTranslation();
+w.setRotation([0, 0, 3.1415927/2]);
+w.setTranslation([0., 0., 10.])
+print q.getTranslation();
+"""

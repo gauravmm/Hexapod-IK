@@ -10,26 +10,29 @@ import math;
 
 class HexapodConfig(object):
     def __init__(self):
-        lg = ["front left", "middle left", "rear left", "front right", "middle right", "rear right"];
-        legPhaseAnt = dict(zip(lg, [0, 1, 0, 1, 0, 1]));
-        legPhaseDiagonal = dict(zip(lg, [0, 1, 2, 0, 1, 2]));
-        legPhaseMillipede = dict(zip(lg, [0, 1, 2, 3, 4, 5]));
+        def legPhaseDef(lp):
+            lg = ["front left", "middle left", "rear left", "front right", "middle right", "rear right"];
+            s = float(max(lp)) + 1.;
+            return dict(zip(lg, [li/s for li in lp]));
+        legPhaseAnt = legPhaseDef([0, 1, 0, 1, 0, 1]);
+        legPhaseDiagonal = legPhaseDef([0, 1, 2, 0, 1, 2]);
+        legPhaseMillipede = legPhaseDef([0, 1, 2, 3, 4, 5]);
         self.legPhase = [legPhaseAnt, legPhaseDiagonal, legPhaseMillipede];
     
     def getStepParams(self):
         return {
-            "center": (50, -20),
-            "radius": 17,
-            "height": 5,
-            "height_peak": 15,
-            "frame_intermediate": 1
+            "center": (30, -20),
+            "radius": 21,
+            "height": 15,
+            "frame_intermediate": 1,
+            "frames": 6
         }
         
-    def getLegPhase(self, legid, patternid):
-        return self.legPhase[patternid][legid];
+    def getLegPhases(self):
+        return self.legPhase;
     
     def getInitialPose(self):
-        return [0., 0., 0.], [0., -15., 50.];
+        return [0., 0., 0.], [0., -15., 70.];
     
     def getLegDisplacement(self, lobj):
         leg = lobj.getId();

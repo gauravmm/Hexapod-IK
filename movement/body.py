@@ -6,27 +6,33 @@
 
 import numpy as np;
 from pyrr import Quaternion, Vector3;
-from movement import HexapodMotionPlanner, StepMotionPlanner;
+from movement import HexapodMotionPlanner;
+from stepping import HexapodStepMotionPlanner;
 from referenceframe import ReferenceFrame;
 
 class Hexapod(object):
     def __init__(self, config):
         # Prepare the root reference frame.
-        self.ref = ReferenceFrame();
-        
+        self.ref = ReferenceFrame(Vector3([0.,0.,0.]), Quaternion.from_z_rotation(0.));
         self.body = HexapodBody(self.ref, config);
         self.legs = [HexapodLeg(config, self.body, self.ref, legid) for legid in config.getLegs()];
         self.mp = HexapodMotionPlanner(config, self.body, self.legs);
-        self.stepmp = [StepMotionPlanner(config, self.mp, l) for l in self.legs];
+        self.stepmp = HexapodStepMotionPlanner(config, self, self.mp, self.legs, config.getLegPhases()[0]);
         
     def tick(self):
-        for smp in self.stepmp:
-            smp.tick();
+        self.stepmp.tick();
         self.mp.tick();
     
-    def setWalking(self, forward, right, clockwise):
-        for smp in self.stepmp:
-            smp.setStepParams(forward, right, clockwise);
+    def setWalking(self, *args):
+        if len(args) == 1:
+            if args[0]:
+                self.stepmp.start();
+            else:
+                self.stepmp.stop();
+        elif len(args) == 3:
+            forward, right, clockwise = args;
+            self.stepmp.start();
+            self.stepmp.setStepParams(forward, right, clockwise);
     
     def setBodyPose(self, angle, trans):
         self.mp.updateTarget({"body": {"trans": trans, "rot": angle, "frames": 1}});
