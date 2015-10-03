@@ -21,7 +21,7 @@ class HexapodConfig(object):
     
     def getStepParams(self):
         return {
-            "center": (30, -20),
+            "center": (20, 0),
             "radius": 21,
             "height": 15,
             "frame_intermediate": 1,
@@ -32,7 +32,7 @@ class HexapodConfig(object):
         return self.legPhase;
     
     def getInitialPose(self):
-        return [0., 0., 0.], [0., -15., 70.];
+        return [0., 0., 0.], [0., 20., 70.];
     
     def getLegDisplacement(self, lobj):
         leg = lobj.getId();

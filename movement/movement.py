@@ -168,7 +168,7 @@ class HexapodMotionPlanner(object):
                 # Snap to, if within range
                 self.body_ref.setRotation(t["body"]["rot"]);
             else:
-                self.body_ref.setRotation(*self.getAngleMovement[t["body"]["schedule"]](self.body_ref.getRotationRaw(), t["body"]["rot"], t["body"]["frames"]));
+                self.body_ref.setRotation(self.getAngleMovement[t["body"]["schedule"]](self.body_ref.getRotationRaw(), t["body"]["rot"], t["body"]["frames"]));
                 force_legs_update = True;
                         
             t["body"]["frames"] -= 1;

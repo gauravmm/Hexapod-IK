@@ -22,6 +22,7 @@ class SerialLink(object):
         self.hexa = hexa;
         self.ser = serial.Serial(port, 38400, timeout=1);
         self.angle_invert = [-1, -1, 1];
+        self.lastMessage = "";
         time.sleep(1);
         if not self.ser:
             raise ValueError("Cannot connect to robot on given port.")
@@ -38,10 +39,15 @@ class SerialLink(object):
         pkt = TYPE_POSE_UPDATE;
         checksum ^= pkt;
         sig = struct.pack('BB', pkt, checksum);
+
+        message = sig + wbuf;
         
-        self.ser.write(sig);
-        self.ser.write(wbuf);
-        self.ser.flush();
+        if self.lastMessage != message:
+            self.ser.write(message);
+            self.ser.flush();
+            self.lastMessage = message;
+        
+        #print sig + wbuf;
         
         def chksum(s):
             c = 0;

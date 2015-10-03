@@ -17,22 +17,15 @@ class Hexapod(object):
         self.body = HexapodBody(self.ref, config);
         self.legs = [HexapodLeg(config, self.body, self.ref, legid) for legid in config.getLegs()];
         self.mp = HexapodMotionPlanner(config, self.body, self.legs);
-        self.stepmp = HexapodStepMotionPlanner(config, self, self.mp, self.legs, config.getLegPhases()[0]);
+        self.stepmp = HexapodStepMotionPlanner(config, self, self.mp, self.legs, config.getLegPhases()[2]);
+        self.stepmp.start();
         
     def tick(self):
         self.stepmp.tick();
         self.mp.tick();
     
-    def setWalking(self, *args):
-        if len(args) == 1:
-            if args[0]:
-                self.stepmp.start();
-            else:
-                self.stepmp.stop();
-        elif len(args) == 3:
-            forward, right, clockwise = args;
-            self.stepmp.start();
-            self.stepmp.setStepParams(forward, right, clockwise);
+    def setWalking(self, forward, right, clockwise):
+        self.stepmp.setStepParams(forward, right, clockwise);
     
     def setBodyPose(self, angle, trans):
         self.mp.updateTarget({"body": {"trans": trans, "rot": angle, "frames": 1}});
