@@ -7,8 +7,9 @@ from joystick import ControlSource;
 def run():
     cfg = HexapodConfig();
     hexa = Hexapod(cfg);
-    with SerialLink(cfg, hexa, "COM4") as lnk:
-        controlLoop(hexa, lnk, False);
+    testLoop(hexa, False, True);
+    #with SerialLink(cfg, hexa, "COM4") as lnk:
+    #    controlLoop(hexa, lnk, False);
 
 def controlLoop(hexa, lnk, viz):
     if viz:
@@ -29,7 +30,8 @@ def testLoop(hexa, lnk, viz):
     hexa.setWalking(1., 0., 0.);
     while True:
         hexa.tick();
-        lnk.tick();
+        if lnk:
+            lnk.tick();
         if viz:
             viz.tick();
 

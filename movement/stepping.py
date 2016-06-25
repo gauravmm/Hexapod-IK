@@ -147,11 +147,11 @@ class LegStepMotionPlanner(object):
             self.mp.updateTarget({self.leg.getId(): {"schedule":"snapto", "target":self.step_ee_pos, "ref":worldRefFrame, "frames": 1}});
         elif self.fr == round(self.frames/2):
             self.step_ee_pos = None;
-            ee_pos = ee_pos + [0., 0., self.step_height];
+            ee_pos = ee_pos + Vector3([0., 0., self.step_height]);
             self.mp.updateTarget({self.leg.getId(): {"schedule":"snapto", "target":ee_pos, "ref":worldRefFrame, "frames": 1}});
         elif self.fr > round(self.frames/2):
             self.step_ee_pos = None;
-            ee_pos = self.heuristicStep(self.step_pattern) + [0., 0., self.step_height];
+            ee_pos = self.heuristicStep(self.step_pattern) + Vector3([0., 0., self.step_height]);
             self.mp.updateTarget({self.leg.getId(): {"schedule":"linear", "target":ee_pos, "ref":self.leg.world_ref, "frames": self.frames - self.fr}});
         else:
             print "Unreachable state";
