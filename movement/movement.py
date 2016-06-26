@@ -118,7 +118,7 @@ class HexapodMotionPlanner(object):
         self.options["delta_sq"] = self.options["delta"] ** 2;
         del self.options["delta"];
         
-        self.checkTarget = lambda start, end: (start | end) <= self.options["delta_sq"];
+        self.checkTarget = lambda start, end: (start | Vector3(end)) <= self.options["delta_sq"];
         self.checkAngle = lambda start, end: sum(abs(s - t) for s,t in zip(start, end)) < 0.05;
         self.getAngleMovement = {};
         self.getAngleMovement["linear"] = lambda start, end, frames: [(e-s)*1./float(frames) + s for s,e in zip(start, end)];
