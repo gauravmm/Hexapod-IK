@@ -26,7 +26,7 @@ class HexapodStepMotionPlanner(object):
     def __init__(self, config, hexa, mp, legs, step_pattern):
         params = config.getStepParams();
         #config.getLegPhase(leg.getId(), step_pattern);
-        self.legmp = [LegStepMotionPlanner(params, hexa, mp, l, step_pattern[l.getId()]) for l in legs];
+        self.legmp = [LegStepMotionPlanner(params, hexa, mp, l, step_pattern[l.getId()], max(step_pattern.values())) for l in legs];
         self.hexa = hexa;
         self.step_pattern = step_pattern;
         
@@ -72,7 +72,7 @@ class HexapodStepMotionPlanner(object):
         
         
 class LegStepMotionPlanner(object):
-    def __init__(self, params, hexa, mp, leg, phase_group):
+    def __init__(self, params, hexa, mp, leg, phase_group, phase_group_max):
         self.radius = params["radius"];
         self.mp = mp;
         self.leg = leg;
@@ -80,12 +80,14 @@ class LegStepMotionPlanner(object):
         self.step_type = 0;
         self.started = False;
         
+        self.frames = params["frames"] * 2;
         self.phase_group = phase_group;
+        self.phase_group_c = round(1/(1-phase_group_max));
+        self.liftoff_frame = round(self.frames * phase_group_max);
         self.step_pattern = None;
         self.step_height = params["height"];
         self.fr = 0;
         self.direction = leg.getDirection();
-        self.frames = params["frames"] * 2;
         self.step_ee_pos = None;
         
         # Set the leg center position:
@@ -141,15 +143,15 @@ class LegStepMotionPlanner(object):
         
         # Yep, we still need keyframe based animation.
         ee_pos = self.leg.getEndEffectorPosition();
-        if self.fr < round(self.frames/2):
+        if self.fr < self.liftoff_frame:
             if self.step_ee_pos is None:
                 self.step_ee_pos = Vector3([ee_pos[0], ee_pos[1], 0.0]);
             self.mp.updateTarget({self.leg.getId(): {"schedule":"snapto", "target":self.step_ee_pos, "ref":worldRefFrame, "frames": 1}});
-        elif self.fr == round(self.frames/2):
+        elif self.fr == self.liftoff_frame:
             self.step_ee_pos = None;
             ee_pos = ee_pos + Vector3([0., 0., self.step_height]);
             self.mp.updateTarget({self.leg.getId(): {"schedule":"snapto", "target":ee_pos, "ref":worldRefFrame, "frames": 1}});
-        elif self.fr > round(self.frames/2):
+        elif self.fr > self.liftoff_frame:
             self.step_ee_pos = None;
             ee_pos = self.heuristicStep(self.step_pattern) + Vector3([0., 0., self.step_height]);
             self.mp.updateTarget({self.leg.getId(): {"schedule":"linear", "target":ee_pos, "ref":self.leg.world_ref, "frames": self.frames - self.fr}});
