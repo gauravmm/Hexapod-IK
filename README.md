@@ -1,6 +1,6 @@
 # Hexapod-IK
 
-See http://www.gauravmanek.com/projects/2015/08/18/hexapod-ik.html
+See https://www.gauravmanek.com/blog/2015/hexapod-step-planner/
 
 ## Installation
 
